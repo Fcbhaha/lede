@@ -7,6 +7,10 @@
 #
 name: OpenWrt-CI
 
+on:
+  schedule:
+    - cron: 0 20 * * *
+
 push:
     branches: [ main ]  # 触发编译的分支
   workflow_dispatch:    # 允许手动触发
