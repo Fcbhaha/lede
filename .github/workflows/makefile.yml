@@ -1,0 +1,42 @@
+name: Build OpenWrt Firmware
+
+on:
+  push:
+    branches: [ main ]  # 触发编译的分支
+  workflow_dispatch:    # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: openwrtorg/rootfs:latest
+      options: --privileged
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive  # 确保拉取子模块（如 feeds）
+
+      - name: Setup Build Environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libncurses5-dev python3
+
+      - name: Update Feeds
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Run Menuconfig (Optional)
+        run: make menuconfig  # 如果需要手动配置，需提前保存 `.config` 文件到仓库
+
+      - name: Compile Firmware
+        run: |
+          make -j$(nproc) V=s  # 启用多线程编译，显示详细日志
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: openwrt-bin
+          path: bin/  # 上传编译后的固件到 Artifacts
