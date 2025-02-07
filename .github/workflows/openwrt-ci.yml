@@ -94,3 +94,14 @@ jobs:
         with:
           name: OpenWrt_firmware
           path: ./bin/targets/
+          
+           # 第十四步：发布固件
+      - name: Release Firmware
+        # 使用 softprops/action-gh-release 操作来发布固件到 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # 发布的标签名称，修改为当前时间加上文本 "WRT_Firmware_Release_"
+          tag_name: WRT_Firmware_Release_${{ env.BUILD_DATE }}
+          # 发布的文件路径，根据设备型号不同而不同
+          files: ${{ inputs.model == 'openwrt' && env.PACKAGED_OUTPUTPATH || './firmware' }}/*.*
+          # 发布内容的文件路径
