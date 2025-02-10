@@ -120,7 +120,7 @@ jobs:
 
   release-job:  # 修改作业名称并修正依赖关系
     name: Create Release
-    needs: build-job  # 依赖修改后的作业名称
+    needs: build_openwrt  # 依赖修改后的作业名称
     runs-on: ubuntu-22.04
     permissions:
       contents: write
