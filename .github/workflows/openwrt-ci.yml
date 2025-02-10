@@ -108,14 +108,13 @@ jobs:
         run: |
           cd ${{ env.FIRMWARE_DIR }}
           echo "firmware_files=$(find . -name '*.bin' -o -name '*.img.gz' | tr '\n' ' ')" >> $GITHUB_OUTPUT
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: openwrt-firmware
           path: ${{ env.FIRMWARE_DIR }}
 
-
-#2025-2-10增加          
   release:
     needs: build
     runs-on: ubuntu-latest
@@ -135,9 +134,12 @@ jobs:
         with:
           tag_name: ${{ inputs.release_tag }}
           name: OpenWrt Build ${{ inputs.release_tag }}
-          generate_release_notes: true
           token: ${{ secrets.GITHUB_TOKEN }}
+          generate_release_notes: true
           files: |
             ${{ env.FIRMWARE_DIR }}/*.bin
             ${{ env.FIRMWARE_DIR }}/*.img.gz
             ${{ env.FIRMWARE_DIR }}/*.manifest
+
+
+
