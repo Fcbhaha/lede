@@ -31,6 +31,8 @@ jobs:
     name: Build OpenWrt Firmware
 
     runs-on: ubuntu-22.04
+    outputs:
+      firmware_path: ${{ steps.set-output.outputs.firmware_path }}
 
     steps:
       - name: Space cleanup and Initialization environment
@@ -103,25 +105,25 @@ jobs:
 #          path: ./bin/targets/
           
       #2025-2-10增加      
-      - name: Find firmware files
-        id: find-firmware
+      - name: Package artifacts
+        id: package
         run: |
           cd ${{ env.FIRMWARE_DIR }}
-          echo "firmware_files=$(find . -name '*.bin' -o -name '*.img.gz' | tr '\n' ' ')" >> $GITHUB_OUTPUT
+          tar -czvf openwrt-firmware-$(date +%Y%m%d).tar.gz *
+          echo "firmware_path=${{ env.FIRMWARE_DIR }}/openwrt-firmware-$(date +%Y%m%d).tar.gz" >> $GITHUB_OUTPUT
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: openwrt-firmware
-          path: ${{ env.FIRMWARE_DIR }}
+          path: ${{ steps.package.outputs.firmware_path }}
 
-  release:
-    needs: build
-    runs-on: ubuntu-latest
+  release-job:  # 修改作业名称并修正依赖关系
+    name: Create Release
+    needs: build-job  # 依赖修改后的作业名称
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
-      packages: write
-      actions: read
     steps:
       - name: Download Artifact
         uses: actions/download-artifact@v4
@@ -135,11 +137,7 @@ jobs:
           tag_name: ${{ inputs.release_tag }}
           name: OpenWrt Build ${{ inputs.release_tag }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          generate_release_notes: true
           files: |
-            ${{ env.FIRMWARE_DIR }}/*.bin
-            ${{ env.FIRMWARE_DIR }}/*.img.gz
-            ${{ env.FIRMWARE_DIR }}/*.manifest
-
+            ${{ env.FIRMWARE_DIR }}/*
 
 
