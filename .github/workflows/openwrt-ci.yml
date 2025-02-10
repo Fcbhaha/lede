@@ -13,6 +13,13 @@ on:
   pull_request:
     branches: [ master ]
   workflow_dispatch:  # 同时支持自动+手动触发
+      inputs:
+      release_tag:
+        description: 'Release tag (e.g., v1.0.0)'
+        required: true
+        default: 'nightly'
+env:
+  FIRMWARE_DIR: bin/targets
 
 permissions:
   contents: read
@@ -57,51 +64,80 @@ jobs:
       - name: Download packages
         run: make download -j16
 
-      - name: Compile firmware
-        run: |
-          make -j$(nproc) || make -j1 V=s
-          echo "======================="
-          echo "Space usage:"
-          echo "======================="
-          df -h
-          echo "======================="
-          du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
-          du -h --max-depth=1 ./build_dir
-          du -h --max-depth=1 ./bin
+ #     - name: Compile firmware
+ #       run: |
+ #         make -j$(nproc) || make -j1 V=s
+ #         echo "======================="
+ #         echo "Space usage:"
+ #         echo "======================="
+ #         df -h
+ #         echo "======================="
+ #         du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
+ #         du -h --max-depth=1 ./build_dir
+ #         du -h --max-depth=1 ./bin
 
-      - name: Prepare artifact
-        run: |
-          mkdir -p ./artifact/package
-          mkdir -p ./artifact/buildinfo
-          rm -rf $(find ./bin/targets/ -type d -name "packages")
-          cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
-          cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
+#      - name: Prepare artifact
+#        run: |
+#          mkdir -p ./artifact/package
+#          mkdir -p ./artifact/buildinfo
+#          rm -rf $(find ./bin/targets/ -type d -name "packages")
+#          cp -rf $(find ./bin/packages/ -type f -name "*.ipk") ./artifact/package/
+#          cp -rf $(find ./bin/targets/ -type f -name "*.buildinfo" -o -name "*.manifest") ./artifact/buildinfo/
 
-      - name: Upload buildinfo
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenWrt_buildinfo
-          path: ./artifact/buildinfo/
+#      - name: Upload buildinfo
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: OpenWrt_buildinfo
+#          path: ./artifact/buildinfo/
 
-      - name: Upload package
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenWrt_package
-          path: ./artifact/package/
+#      - name: Upload package
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: OpenWrt_package
+#          path: ./artifact/package/
 
-      - name: Upload firmware
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenWrt_firmware
-          path: ./bin/targets/
+#      - name: Upload firmware
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: OpenWrt_firmware
+#          path: ./bin/targets/
           
-           # 第十四步：发布固件
-      - name: Release Firmware
-        # 使用 softprops/action-gh-release 操作来发布固件到 GitHub Release
+      #2025-2-10增加      
+      - name: Find firmware files
+        id: find-firmware
+        run: |
+          cd ${{ env.FIRMWARE_DIR }}
+          echo "firmware_files=$(find . -name '*.bin' -o -name '*.img.gz' | tr '\n' ' ')" >> $GITHUB_OUTPUT
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openwrt-firmware
+          path: ${{ env.FIRMWARE_DIR }}
+
+
+#2025-2-10增加          
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      actions: read
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openwrt-firmware
+          path: ${{ env.FIRMWARE_DIR }}
+
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          # 发布的标签名称，修改为当前时间加上文本 "WRT_Firmware_Release_"
-          tag_name: WRT_Firmware_Release_${{ env.BUILD_DATE }}
-          # 发布的文件路径，根据设备型号不同而不同
-          files: ${{ inputs.model == 'openwrt' && env.PACKAGED_OUTPUTPATH || './firmware' }}/*.*
-          # 发布内容的文件路径
+          tag_name: ${{ inputs.release_tag }}
+          name: OpenWrt Build ${{ inputs.release_tag }}
+          generate_release_notes: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            ${{ env.FIRMWARE_DIR }}/*.bin
+            ${{ env.FIRMWARE_DIR }}/*.img.gz
+            ${{ env.FIRMWARE_DIR }}/*.manifest
