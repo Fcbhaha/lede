@@ -135,7 +135,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.release_tag }}
-          tag: ${{ inputs.release_tag }}
+          tag: 2025-2-11
+          allowUpdates: true
           name: OpenWrt Build ${{ inputs.release_tag }}
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
