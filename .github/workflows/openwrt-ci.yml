@@ -66,17 +66,17 @@ jobs:
       - name: Download packages
         run: make download -j16
 
- #     - name: Compile firmware
- #       run: |
- #         make -j$(nproc) || make -j1 V=s
- #         echo "======================="
- #         echo "Space usage:"
- #         echo "======================="
- #         df -h
- #         echo "======================="
- #         du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
- #         du -h --max-depth=1 ./build_dir
- #         du -h --max-depth=1 ./bin
+      - name: Compile firmware
+        run: |
+          make -j$(nproc) || make -j1 V=s
+          echo "======================="
+          echo "Space usage:"
+          echo "======================="
+          df -h
+          echo "======================="
+          du -h --max-depth=1 ./ --exclude=build_dir --exclude=bin
+          du -h --max-depth=1 ./build_dir
+          du -h --max-depth=1 ./bin
 
 #      - name: Prepare artifact
 #        run: |
@@ -134,7 +134,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: 2025-2-11
+          tag_name: 2025-2-12
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
             ${{ env.FIRMWARE_DIR }}/*
